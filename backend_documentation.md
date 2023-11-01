@@ -15,111 +15,111 @@ following button on the top-right menu provides a table of content:
 
 
 # Conventions
-A few shorthands used in the document:
+  A few shorthands used in the document:
 
- * Backend: the whole software stack including the Fastpath, API, tools
-    that transfer data around
+  * Backend: the whole software stack including the Fastpath, API, tools
+  that transfer data around
 
- * FSN: The backend-fsn.ooni.org host, running most of the
-    **production** backend infrastructure.
+  * FSN: The backend-fsn.ooni.org host, running most of the
+  **production** backend infrastructure.
 
- * ams-pg-test: The ams-pg-test.ooni.org host, running a **test**
-    backend infrastructure.
+  * ams-pg-test: The ams-pg-test.ooni.org host, running a **test**
+  backend infrastructure.
 
-Usually backend components have names that are kept consistent across:
+  Usually backend components have names that are kept consistent across:
 
- * Journald unit name
+  * Journald unit name
 
- * Systemd service name
+  * Systemd service name
 
- * Systemd timer name
+  * Systemd timer name
 
- * StatsD metrics prefix
+  * StatsD metrics prefix
 
-When linking to the backend codebase a specific commit is used in order
-to avoid breaking links when the codebase changes:
-<https://github.com/ooni/backend/blob/0ec9fba0eb9c4c440dcb7456f2aab529561104ae/>
+  When linking to the backend codebase a specific commit is used in order
+  to avoid breaking links when the codebase changes:
+  <https://github.com/ooni/backend/blob/0ec9fba0eb9c4c440dcb7456f2aab529561104ae/>
 
-Internal links across the document are indicated with small icons to
-illustrate the type of element they are linking to, as done in technical
-wikis.
+  Internal links across the document are indicated with small icons to
+  illustrate the type of element they are linking to, as done in technical
+  wikis.
 
-The icons in use are listed below:
+  The icons in use are listed below:
 
- * API: 🐝
+  * API: 🐝
 
- * Bug: 🐞
+  * Bug: 🐞
 
- * Backend component: ⚙
+  * Backend component: ⚙
 
- * Grafana dashboard: 📊
+  * Grafana dashboard: 📊
 
- * Backend host: 🖥
+  * Backend host: 🖥
 
- * Jupyter notebook: 📔
+  * Jupyter notebook: 📔
 
- * Debian package: 📦
+  * Debian package: 📦
 
- * Runbook: 📒
+  * Runbook: 📒
 
- * Database table: ⛁
+  * Database table: ⛁
 
- * Network test: Ⓣ
+  * Network test: Ⓣ
 
- * Systemd timer: ⏲
+  * Systemd timer: ⏲
 
- * Python script: 🐍
+  * Python script: 🐍
 
- * Tool: 🔧
+  * Tool: 🔧
 
- * Web UI: 🖱
+  * Web UI: 🖱
 
- * General topic: 💡
+  * General topic: 💡
 
 
 # Architecture
-The backend infrastructure performs multiple functions:
+  The backend infrastructure performs multiple functions:
 
- * Provide APIs for data consumers
+  * Provide APIs for data consumers
 
- * Instruct probes on what measurements to perform
+  * Instruct probes on what measurements to perform
 
- * Receive measurements from probes, process them and store them in the database
+  * Receive measurements from probes, process them and store them in the database
 
- * Upload new measurements to a bucket on [S3 data bucket](#s3-data-bucket)&thinsp;💡
+* Upload new measurements to a bucket on [S3 data bucket](#s3-data-bucket)&thinsp;💡
 
- * Fetch data from external sources e.g. fingerprints from a GitHub repository
+  * Fetch data from external sources e.g. fingerprints from a GitHub repository
 
 
 ## Main data flows
-This diagram represent the main flow of measurement data.
+  This diagram represent the main flow of measurement data.
 
-The rectangles represent processes. The ellipses represent data at rest:
-as files on disk, files on S3 or records in database tables.
+  The rectangles represent processes. The ellipses represent data at rest:
+  as files on disk, files on S3 or records in database tables.
 
-![Diagram](https://kroki.io/blockdiag/svg/eNrFlD1PwzAQhvf-CstdSTOwFYEEKkgMSJUQU4Uqf5wbU8c2_kCVEP-d2E3SlrZjQzbfG_t9fL47qgxbc0lW6HuEOAgSVVj6ilhAt8iZqDlwajY3IzR3hoJHC2aUcY2Ix0JA8-ErVDkQKVKFYP20LFcyVJFOmKlLY7QsKWFr0LzghsUadCBBGl1SZWhZE6k7fXmgT2o-ttkTvzf2jxvb-ILbB0j2QmQZv16jD2-0wmjR4YNS0nq4IF92LIRULWSisMYHRvSgHK1nCzF72KYCBfof6QiEKuhJBPHBklANDtMZ7_Nw6dfoM0KEQVGSbbG1zRhvTSkTDg6fKOYLYtRAfHSQYkXsEDLQU5urgYG6J0oQ_YAp7hC-nz9Pt2vkwX1J1vRXFnagaXVUXv3el91V253d_MDpvmfP3y-Q_rA-Vzm0GzSn3Q4fuN3RDYVj8aBZj7v3vMdJ1D9__fwCHdgDSg==)
+  ![Diagram](https://kroki.io/blockdiag/svg/eNrFlD1PwzAQhvf-CstdSTOwFYEEKkgMSJUQU4Uqf5wbU8c2_kCVEP-d2E3SlrZjQzbfG_t9fL47qgxbc0lW6HuEOAgSVVj6ilhAt8iZqDlwajY3IzR3hoJHC2aUcY2Ix0JA8-ErVDkQKVKFYP20LFcyVJFOmKlLY7QsKWFr0LzghsUadCBBGl1SZWhZE6k7fXmgT2o-ttkTvzf2jxvb-ILbB0j2QmQZv16jD2-0wmjR4YNS0nq4IF92LIRULWSisMYHRvSgHK1nCzF72KYCBfof6QiEKuhJBPHBklANDtMZ7_Nw6dfoM0KEQVGSbbG1zRhvTSkTDg6fKOYLYtRAfHSQYkXsEDLQU5urgYG6J0oQ_YAp7hC-nz9Pt2vkwX1J1vRXFnagaXVUXv3el91V253d_MDpvmfP3y-Q_rA-Vzm0GzSn3Q4fuN3RDYVj8aBZj7v3vMdJ1D9__fwCHdgDSg==)
 
-```blockdiag
-blockdiag {
- default_shape = roundedbox;
- Probes [color = "#ffeeee", href = "@@probes"];
- Explorer [color = "#eeeeff"];
- "S3 jsonl" [shape = ellipse, href = "@@jsonl-files"];
- "S3 postcan" [shape = ellipse, href = "@@postcans"];
- "DB jsonl tbl" [shape = ellipse, href = "@@jsonl-table"];
- "DB fastpath tbl" [shape = ellipse, href = "@@fastpath-table"];
- "disk queue" [shape = ellipse, href = "@@disk-queue"];
- "Uploader" [color = "#eeeeff", href = "@@measurement-uploader"];
- "Fastpath" [color = "#eeeeff", href = "@@fastpath"];
+<!--
+  blockdiag {
+    default_shape = roundedbox;
+    Probes [color = "#ffeeee", href = "@@probes"];
+    Explorer [color = "#eeeeff"];
+    "S3 jsonl" [shape = ellipse, href = "@@jsonl-files"];
+    "S3 postcan" [shape = ellipse, href = "@@postcans"];
+    "DB jsonl tbl" [shape = ellipse, href = "@@jsonl-table"];
+    "DB fastpath tbl" [shape = ellipse, href = "@@fastpath-table"];
+    "disk queue" [shape = ellipse, href = "@@disk-queue"];
+    "Uploader" [color = "#eeeeff", href = "@@measurement-uploader"];
+    "Fastpath" [color = "#eeeeff", href = "@@fastpath"];
 
- Probes -> "API: Probe services" -> "Fastpath" -> "DB fastpath tbl" -> "API: Measurements" -> "Explorer";
- "API: Probe services" -> "disk queue" -> "API: uploader" -> "S3 jsonl" -> "API: Measurements";
- "Uploader" -> "S3 postcan";
- "Uploader" -> "DB jsonl tbl";
- "DB jsonl tbl" -> "API: Measurements";
- "disk queue" -> "API: Measurements";
-}
-```
+    Probes -> "API: Probe services" -> "Fastpath" -> "DB fastpath tbl" -> "API: Measurements" -> "Explorer";
+    "API: Probe services" -> "disk queue" -> "API: uploader" -> "S3 jsonl" -> "API: Measurements";
+    "Uploader" -> "S3 postcan";
+    "Uploader" -> "DB jsonl tbl";
+    "DB jsonl tbl" -> "API: Measurements";
+    "disk queue" -> "API: Measurements";
+  }
+-->
 
 Ellipses represent data; rectangles represent processes. Click on the
 image and then click on each shape to see related documentation.
@@ -163,86 +163,135 @@ way.
 > of the affected measurements from the [S3 data bucket](#s3-data-bucket)&thinsp;💡
 > bucket.
 
-As such, the backend infrastructure is
-[FOSS](https://en.wikipedia.org/wiki/Free_and_open-source_software) and
-can be deployed by 3rd parties. We encourage researchers to replicate
-our findings.
+  As such, the backend infrastructure is
+  [FOSS](https://en.wikipedia.org/wiki/Free_and_open-source_software) and
+  can be deployed by 3rd parties. We encourage researchers to replicate
+  our findings.
 
-Incoming measurements are minimally altered by the
-[Measurement uploader](#measurement-uploader)&thinsp;⚙ and uploaded to S3.
+  Incoming measurements are minimally altered by the
+  [Measurement uploader](#measurement-uploader)&thinsp;⚙ and uploaded to S3.
+
+
+## Supply chain management
+
+The backend implements software supply chain management by installing components and libraries from the Debian Stable archive.
+
+This provides the following benefits:
+
+ * Receiving targeted security updates from the OS without introducing breaking changes.
+ * Protection against supply chain attacks.
+ * Reproducible deployment for internal use (e.g. testbeds and new backend hosts) and for external researchers.
+
+> **warning**
+> [ClickHouse](#clickhouse)&thinsp;⚙ is installed from a 3rd party archive and receives limited security support. As a mitigation an LTS version is used yet the support time is 1 year.
+
+The backend received a security assessment from Cure53 <https://cure53.de/> in 2022.
+
+Low-criticality hosts e.g. the monitoring stack also have components installed from 3rd party archives.
 
 
 # Application metrics
-All components of the backend are designed to output application
-metrics.
+  All components of the backend are designed to output application
+  metrics.
 
-Metrics are prefixed with the name of each application. The metrics are
-used in [Grafana](#grafana)&thinsp;🔧 for charts, monitoring and alarming.
+  Metrics are prefixed with the name of each application. The metrics are
+  used in [Grafana](#grafana)&thinsp;🔧 for charts, monitoring and alarming.
 
-They use the [StatsD](#statsd)&thinsp;💡 protocol.
+  They use the [StatsD](#statsd)&thinsp;💡 protocol.
 
-Application metrics data flow:
+  Application metrics data flow:
 
-![Diagram](https://kroki.io/blockdiag/svg/eNq9kc1qAyEUhffzFDLZNnGf0EBX7SoEkl0p4arXUaJe8QcKpe9eZ9Imkz5AXHo-OcdzhCN5VhYG9tUxhRqqK6dsICJ7ZolqUKgEfW469hKjsxKKpcDeJTlKjegXWmM7_UcjdlgUFJiro6Z1_8RMQj3emFJiXnM-2GKqWEnynChYLkCeMailIlk9hjL5cOFIcA82_OmnO33l1SJcTKcA-0Qei8GaH5shXn2nGK8JNIQH9zBcTKcA86mW29suDgS60T23d1ndjda4eX1X9O143B_-t9vg309uuu8fUvvJ0Q==)
+  ![Diagram](https://kroki.io/blockdiag/svg/eNq9kc1qAyEUhffzFDLZNnGf0EBX7SoEkl0p4arXUaJe8QcKpe9eZ9Imkz5AXHo-OcdzhCN5VhYG9tUxhRqqK6dsICJ7ZolqUKgEfW469hKjsxKKpcDeJTlKjegXWmM7_UcjdlgUFJiro6Z1_8RMQj3emFJiXnM-2GKqWEnynChYLkCeMailIlk9hjL5cOFIcA82_OmnO33l1SJcTKcA-0Qei8GaH5shXn2nGK8JNIQH9zBcTKcA86mW29suDgS60T23d1ndjda4eX1X9O143B_-t9vg309uuu8fUvvJ0Q==)
 
-Ellipses represent data; rectangles represent processes. Purple
-components belong to the backend. Click on the image and then click on
-each shape to see related documentation.
+<!--
+blockdiag {
+ default_shape = roundedbox;
+ Application [color = "#ffeeee"];
+ Netdata [color = "#eeeeff", href = "@@netdata"];
+ Prometheus [color = "#eeeeff", href = "@@prometheus"];
+ Grafana [color = "#eeeeff", href = "@@grafana"];
+ Application -> Netdata [label = "statsd"];
+ Netdata -> Prometheus [label = "HTTPS"];
+ Prometheus -> Grafana;
+}
+-->
 
-[Prometheus](#tool:prometheus) and [Grafana](#grafana)&thinsp;🔧 provide
-historical charts for more than 90 days and are useful to investigate
-long-term trends.
+  Ellipses represent data; rectangles represent processes. Purple
+  components belong to the backend. Click on the image and then click on
+  each shape to see related documentation.
 
-[Netdata](#netdata)&thinsp;🔧 provides a web UI with real-time metrics. See
-the dedicated subchapter for details.
+  [Prometheus](#tool:prometheus) and [Grafana](#grafana)&thinsp;🔧 provide
+  historical charts for more than 90 days and are useful to investigate
+  long-term trends.
+
+  [Netdata](#netdata)&thinsp;🔧 provides a web UI with real-time metrics. See
+  the dedicated subchapter for details.
 
 
 ## StatsD
-All backend components send StatsD metrics over UDP using localhost as destination.
+  All backend components send StatsD metrics over UDP using localhost as destination.
 
-This guarantees that applications never block on metric generation in
-case the receiver slows down. The StatsD messages are received by
-[Netdata](#netdata)&thinsp;🔧. It automatically tracks any new metric,
-generates averages and summaries as needed and exposes it to
-[Prometheus](#prometheus)&thinsp;🔧 for scraping.
-In the codebase the statsd library is often used as:
+  This guarantees that applications never block on metric generation in
+  case the receiver slows down. The StatsD messages are received by
+  [Netdata](#netdata)&thinsp;🔧. It automatically tracks any new metric,
+  generates averages and summaries as needed and exposes it to
+  [Prometheus](#prometheus)&thinsp;🔧 for scraping.
+  In the codebase the statsd library is often used as:
 
-```python
-from <package_name>.metrics import setup_metrics
-setup_metrics(name="<component_name>")
-metrics.gauge("<metric_name>", <value>)
-```
+  ```python
+  from <package_name>.metrics import setup_metrics
+  setup_metrics(name="<component_name>")
+  metrics.gauge("<metric_name>", <value>)
+  ```
 
-See [Conventions](#conventions)&thinsp;💡 for patterns around component naming.
+  Because of this, a quick way to identify where metrics are being generated
+  in the backend codebase is to search e.g.:
+
+  * <https://github.com/search?q=repo%3Aooni%2Fbackend+metrics.gauge&type=code>
+  * <https://github.com/search?q=repo%3Aooni%2Fbackend+metrics.timer&type=code>
+
+  Where possible, timers have the same name as the function being timed e.g.
+  <https://github.com/search?q=repo%3Aooni%2Fbackend+clickhouse_upsert_summary&type=code>
+
+  See [Conventions](#conventions)&thinsp;💡 for patterns around component naming.
 
 
 ### Metrics list
-This subsection provides a list of the most important application metrics as they
-are shown in Grafana. The names are autogenerated by Netdata based on the
-metric name used in StatsD.
+  This subsection provides a list of the most important application metrics as they
+  are shown in Grafana. The names are autogenerated by Netdata based on the
+  metric name used in StatsD.
 
-For example a `@metrics.timer("generate_test_list")` Python decorator is used at:
-<https://github.com/ooni/backend/blob/0ec9fba0eb9c4c440dcb7456f2aab529561104ae/api/ooniapi/prio.py#L162>.
-Such timer will be processed by Netdata and appear in Grafana as:
+  For example a `@metrics.timer("generate_test_list")` Python decorator is used at:
+  <https://github.com/ooni/backend/blob/0ec9fba0eb9c4c440dcb7456f2aab529561104ae/api/ooniapi/prio.py#L162>.
+  Such timer will be processed by Netdata and appear in Grafana as:
+  ```
+  netdata_statsd_timer_ooni_api_generate_test_list_milliseconds_average
+  ```
+
+  The metrics always start with `netdata_statsd` and end with:
+
+  * `_milliseconds_average`
+  * `_events_persec_average`
+  * `_value_average`
+
+  Also see <https://blog.netdata.cloud/introduction-to-statsd/>
+
+  TIP: StatsD collectors (like Netdata or others) preprocess datapoints by calculating average/min/max values etc.
+
+  Run this to locate where in the backend codbase application metrics
+  are being generated:
+
+  ```bash
+  find ~ -name '*.py' -exec grep 'metrics\.' -H "{}" \;
+  ```
+
+  Metrics for [ASN metadata updater](#asn-metadata-updater)&thinsp;⚙.
+  See the [ASN metadata updater dashboard](#asn-metadata-updater-dashboard)&thinsp;📊:
+
 ```
-netdata_statsd_timer_ooni_api_generate_test_list_milliseconds_average
-```
-
-Also see <https://blog.netdata.cloud/introduction-to-statsd/>
-
-TIP: StatsD collectors (like Netdata or others) preprocess datapoints by calculating average/min/max values etc.
-
-Run this to locate where in the backend codbase application metrics
-are being generated:
-
-```bash
-find ~ -name '*.py' -exec grep 'metrics\.' -H "{}" \;
-```
-
-Metrics for [ASN metadata updater](#asn-metadata-updater)&thinsp;⚙.
-See the [ASN metadata updater dashboard](#asn-metadata-updater-dashboard)&thinsp;📊:
-
-```
+netdata_statsd_asnmeta_updater_asnmeta_tmp_len_gauge_value_average
+netdata_statsd_asnmeta_updater_asnmeta_update_progress_gauge_value_average
+netdata_statsd_asnmeta_updater_fetch_data_timer_milliseconds_average
 netdata_statsd_gauge_asnmeta_updater_asnmeta_tmp_len_value_average
 netdata_statsd_gauge_asnmeta_updater_asnmeta_update_progress_value_average
 netdata_statsd_timer_asnmeta_updater_fetch_data_milliseconds_average
@@ -252,20 +301,33 @@ netdata_statsd_timer_asnmeta_updater_fetch_data_milliseconds_average
 Metrics for [CitizenLab test list updater](#citizenlab-test-list-updater)&thinsp;⚙
 
 ```
+netdata_statsd_citizenlab_test_lists_updater_citizenlab_test_list_len_gauge_value_average
+netdata_statsd_citizenlab_test_lists_updater_fetch_citizen_lab_lists_timer_milliseconds_average
+netdata_statsd_citizenlab_test_lists_updater_update_citizenlab_table_timer_milliseconds_average
+netdata_statsd_gauge_citizenlab_test_lists_updater_citizenlab_test_list_len_value_average
+netdata_statsd_gauge_citizenlab_test_lists_updater_rowcount_value_average
 netdata_statsd_timer_citizenlab_test_lists_updater_fetch_citizen_lab_lists_milliseconds_average
 netdata_statsd_timer_citizenlab_test_lists_updater_rebuild_citizenlab_table_from_citizen_lab_lists_milliseconds_average
-netdata_statsd_counter_citizenlab_test_lists_updater_rowcount_events_persec_average
-netdata_statsd_gauge_citizenlab_test_lists_updater_rowcount_value_average
+netdata_statsd_timer_citizenlab_test_lists_updater_update_citizenlab_table_milliseconds_average
 ```
 
 Metrics for the [Database backup tool](#database-backup-tool)&thinsp;⚙.
 See the [Database backup dashboard](#database-backup-dashboard)&thinsp;📊 on Grafana:
 
 ```
-netdata_statsd_timer_db_backup_backup_table_autoclavedlookup_milliseconds_average
-netdata_statsd_timer_db_backup_backup_table_citizenlab_milliseconds_average
-netdata_statsd_timer_db_backup_backup_table_fastpath_milliseconds_average
-netdata_statsd_timer_db_backup_backup_table_jsonl_milliseconds_average
+netdata_statsd_db_backup_run_export_timer_milliseconds_average
+netdata_statsd_db_backup_status_gauge_value_average
+netdata_statsd_db_backup_table_fastpath_backup_time_ms_gauge_value_average
+netdata_statsd_db_backup_table_jsonl_backup_time_ms_gauge_value_average
+netdata_statsd_db_backup_uploaded_bytes_tot_gauge_value_average
+netdata_statsd_db_backup_upload_to_s3_timer_milliseconds_average
+netdata_statsd_gauge_db_backup_status_value_average
+netdata_statsd_gauge_db_backup_table_fastpath_backup_time_ms_value_average
+netdata_statsd_gauge_db_backup_table_jsonl_backup_time_ms_value_average
+netdata_statsd_gauge_db_backup_uploaded_bytes_tot_value_average
+netdata_statsd_timer_db_backup_run_backup_milliseconds_average
+netdata_statsd_timer_db_backup_run_export_milliseconds_average
+netdata_statsd_timer_db_backup_upload_to_s3_milliseconds_average
 netdata_statsd_gauge_db_backup_status_value_average
 netdata_statsd_gauge_db_backup_table_citizenlab_byte_count_value_average
 netdata_statsd_gauge_db_backup_table_fastpath_backup_time_ms_value_average
@@ -273,6 +335,9 @@ netdata_statsd_gauge_db_backup_table_fastpath_byte_count_value_average
 netdata_statsd_gauge_db_backup_table_jsonl_backup_time_ms_value_average
 netdata_statsd_gauge_db_backup_table_jsonl_byte_count_value_average
 netdata_statsd_gauge_db_backup_uploaded_bytes_tot_value_average
+netdata_statsd_timer_db_backup_backup_table_citizenlab_milliseconds_average
+netdata_statsd_timer_db_backup_backup_table_fastpath_milliseconds_average
+netdata_statsd_timer_db_backup_backup_table_jsonl_milliseconds_average
 ```
 
 
@@ -316,30 +381,14 @@ netdata_statsd_gauge_nginx_aggregation_cache_MISS_value_average
 netdata_statsd_gauge_nginx_aggregation_cache_UPDATING_value_average
 ```
 
-TODO finish this
+Metrics for the [API](#api)&thinsp;⚙.
 
 ```
-netdata_statsd_timer_ooni_api_apicall___api__v
-netdata_statsd_gauge_ooni_api_check_in_test_list_count_value_average
-netdata_statsd_timer_ooni_api_citizenlab_lock_time_milliseconds_average
-netdata_statsd_timer_ooni_api_citizenlab_repo_init_milliseconds_average
-netdata_statsd_timer_ooni_api_citizenlab_repo_pull_milliseconds_average
-netdata_statsd_timer_ooni_api_fetch_citizenlab_data_milliseconds_average
-netdata_statsd_timer_ooni_api_fetch_reactive_url_list_milliseconds_average
-netdata_statsd_timer_ooni_api_generate_test_list_milliseconds_average
 netdata_statsd_counter_ooni_api_geoip_asn_differs_events_persec_average
 netdata_statsd_counter_ooni_api_geoip_cc_differs_events_persec_average
 netdata_statsd_counter_ooni_api_geoip_ipaddr_found_events_persec_average
 netdata_statsd_counter_ooni_api_geoip_ipaddr_not_found_events_persec_average
-netdata_statsd_timer_ooni_api_get_aggregated_milliseconds_average
-netdata_statsd_timer_ooni_api_get_measurement_meta_clickhouse_milliseconds_average
-netdata_statsd_timer_ooni_api_get_measurement_meta_milliseconds_average
-netdata_statsd_timer_ooni_api_get_raw_measurement_milliseconds_average
-netdata_statsd_timer_ooni_api_get_torsf_stats_milliseconds_average
-netdata_statsd_timer_ooni_api_gunicorn_request_duration_milliseconds_average
 netdata_statsd_counter_ooni_api_gunicorn_request_status_
-netdata_statsd_timer_ooni_api_open_report_milliseconds_average
-netdata_statsd_timer_ooni_api_open_report_milliseconds_averageopen_report
 netdata_statsd_counter_ooni_api_probe_cc_asn_match_events_persec_average
 netdata_statsd_counter_ooni_api_probe_cc_asn_nomatch_events_persec_average
 netdata_statsd_counter_ooni_api_probe_legacy_login_successful_events_persec_average
@@ -347,250 +396,63 @@ netdata_statsd_counter_ooni_api_probe_login_successful_events_persec_average
 netdata_statsd_counter_ooni_api_receive_measurement_count_events_persec_average
 netdata_statsd_counter_ooni_api_receive_measurement_discard_asn_
 netdata_statsd_counter_ooni_api_receive_measurement_discard_cc_zz_events_persec_average
-netdata_statsd_timer_ooni_api_receive_measurement_milliseconds_average
-netdata_statsd_gauge_ooni_api_spool_post_count_value_average
-netdata_statsd_gauge_ooni_api_test_list_urls_count_value_average
-netdata_statsd_timer_ooni_api_uploader_fill_jsonl_milliseconds_average
-netdata_statsd_timer_ooni_api_uploader_fill_postcan_milliseconds_average
 netdata_statsd_counter_ooni_api_uploader_msmt_count_events_persec_average
 netdata_statsd_counter_ooni_api_uploader_postcan_count_events_persec_average
+netdata_statsd_gauge_ooni_api_check_in_test_list_count_value_average
+netdata_statsd_gauge_ooni_api_spool_post_count_value_average
+netdata_statsd_gauge_ooni_api_test_list_urls_count_value_average
+netdata_statsd_timer_ooni_api_apicall___api__v
+netdata_statsd_timer_ooni_api_citizenlab_lock_time_milliseconds_average
+netdata_statsd_timer_ooni_api_citizenlab_repo_init_milliseconds_average
+netdata_statsd_timer_ooni_api_citizenlab_repo_pull_milliseconds_average
+netdata_statsd_timer_ooni_api_fetch_citizenlab_data_milliseconds_average
+netdata_statsd_timer_ooni_api_fetch_reactive_url_list_milliseconds_average
+netdata_statsd_timer_ooni_api_generate_test_list_milliseconds_average
+netdata_statsd_timer_ooni_api_get_aggregated_milliseconds_average
+netdata_statsd_timer_ooni_api_get_measurement_meta_clickhouse_milliseconds_average
+netdata_statsd_timer_ooni_api_get_measurement_meta_milliseconds_average
+netdata_statsd_timer_ooni_api_get_raw_measurement_milliseconds_average
+netdata_statsd_timer_ooni_api_get_torsf_stats_milliseconds_average
+netdata_statsd_timer_ooni_api_gunicorn_request_duration_milliseconds_average
+netdata_statsd_timer_ooni_api_open_report_milliseconds_average
+netdata_statsd_timer_ooni_api_open_report_milliseconds_averageopen_report
+netdata_statsd_timer_ooni_api_receive_measurement_milliseconds_average
+netdata_statsd_timer_ooni_api_uploader_fill_jsonl_milliseconds_average
+netdata_statsd_timer_ooni_api_uploader_fill_postcan_milliseconds_average
 netdata_statsd_timer_ooni_api_uploader_total_run_time_milliseconds_average
 netdata_statsd_timer_ooni_api_uploader_update_db_table_milliseconds_average
 netdata_statsd_timer_ooni_api_uploader_upload_measurement_milliseconds_average
 ```
 
-
+Metrics for the [GeoIP downloader](#geoip-downloader)&thinsp;⚙.
 
 ```
-netdata_statsd_timer_ooni_download_geoip_download_geoip_milliseconds_average
 netdata_statsd_gauge_ooni_download_geoip_geoip_asn_epoch_value_average
 netdata_statsd_gauge_ooni_download_geoip_geoip_asn_node_cnt_value_average
 netdata_statsd_gauge_ooni_download_geoip_geoip_cc_epoch_value_average
 netdata_statsd_gauge_ooni_download_geoip_geoip_cc_node_cnt_value_average
+netdata_statsd_timer_ooni_download_geoip_download_geoip_milliseconds_average
 ```
 
-
-
-```
-netdata_statsd_timer_ooni_stun_handle_request_milliseconds_average
-netdata_statsd_counter_prio_category_code_requested_events_persec_average
-netdata_statsd_timer_prio_generate_test_list_milliseconds_average
-```
-
-
+Metrics for the [test helper rotation](#test-helper-rotation)&thinsp;⚙.
 
 ```
-netdata_statsd_gauge_prioritization_weights
-netdata_statsd_gauge_prioritization_weights_gini_<cc>_value_average
-
-netdata_statsd_counter_prio_total_urls_served_events_persec_average
-netdata_statsd_timer_prio_update_url_prioritization_milliseconds_average
-
+netdata_statsd_timer_rotation_create_le_do_ssl_cert_milliseconds_average
+netdata_statsd_timer_rotation_deploy_ssl_cert_milliseconds_average
+netdata_statsd_timer_rotation_destroy_drained_droplets_milliseconds_average
+netdata_statsd_timer_rotation_end_to_end_test_milliseconds_average
+netdata_statsd_timer_rotation_run_time_milliseconds_average
+netdata_statsd_timer_rotation_scp_file_milliseconds_average
+netdata_statsd_timer_rotation_setup_nginx_milliseconds_average
+netdata_statsd_timer_rotation_setup_vector_milliseconds_average
+netdata_statsd_timer_rotation_spawn_new_droplet_milliseconds_average
+netdata_statsd_timer_rotation_ssh_reload_nginx_milliseconds_average
+netdata_statsd_timer_rotation_ssh_restart_netdata_milliseconds_average
+netdata_statsd_timer_rotation_ssh_restart_nginx_milliseconds_average
+netdata_statsd_timer_rotation_ssh_restart_vector_milliseconds_average
+netdata_statsd_timer_rotation_ssh_wait_droplet_warmup_milliseconds_average
+netdata_statsd_timer_rotation_update_dns_records_milliseconds_average
 ```
-
-```
-analysis/analysis/citizenlab_test_lists_updater.py:    metrics.gauge("citizenlab_test_list_len", len(out))
-analysis/analysis/citizenlab_test_lists_updater.py:@metrics.timer("update_citizenlab_table")
-
-fingerprints_updater.py:    metrics.gauge("fingerprints_dns_tmp_len", row_cnt)
-fingerprints_updater.py:    metrics.gauge("fingerprints_http_tmp_len", row_cnt)
-fingerprints_updater.py:    metrics.gauge("fingerprints_update_progress", progress_cnt)
-fingerprints_updater.py:@metrics.timer("fetch_csv")
-
-analysis/analysis/tests/test_asnmeta.py:    asnmeta_updater.metrics = Mock()
-
-analysis/ooni_db_backup.py:            metrics.gauge(f"table_{tblname}_backup_time_ms", delta_ms)
-analysis/ooni_db_backup.py:        metrics.gauge(f"table_{tblname}_backup_time_ms", delta_ms)
-analysis/ooni_db_backup.py:    metrics.gauge(f"table_{tblname}_backup_time_ms", delta_ms)
-analysis/ooni_db_backup.py:    metrics.gauge("status", 0)
-analysis/ooni_db_backup.py:    metrics.gauge("status", 1)
-analysis/ooni_db_backup.py:        metrics.gauge("status", 2)
-analysis/ooni_db_backup.py:            metrics.gauge("uploaded_bytes_tot", data_cnt)
-analysis/ooni_db_backup.py:        metrics.gauge("uploaded_bytes_tot", data_cnt)
-analysis/ooni_db_backup.py:@metrics.timer("run_backup")
-analysis/ooni_db_backup.py:@metrics.timer("run_export")
-analysis/ooni_db_backup.py:@metrics.timer("upload_to_s3")
-analysis/ooni_db_backup.py:        metrics.timing(f"table_{tblname}", delta_ms)
-analysis/rotation.py:metrics = statsd.StatsClient("127.0.0.1", 8125, prefix="rotation")
-analysis/rotation.py:@metrics.timer("create_le_do_ssl_cert")
-analysis/rotation.py:@metrics.timer("destroy_drained_droplets")
-analysis/rotation.py:@metrics.timer("end_to_end_test")
-analysis/rotation.py:@metrics.timer("run_time")
-analysis/rotation.py:@metrics.timer("scp_file")
-analysis/rotation.py:@metrics.timer("setup_nginx")
-analysis/rotation.py:@metrics.timer("setup_vector")
-analysis/rotation.py:@metrics.timer("spawn_new_droplet")
-analysis/rotation.py:@metrics.timer("ssh_restart_netdata")
-analysis/rotation.py:@metrics.timer("ssh_restart_nginx")
-analysis/rotation.py:@metrics.timer("ssh_restart_vector")
-analysis/rotation.py:@metrics.timer("ssh_wait_droplet_warmup")
-analysis/rotation.py:@metrics.timer("update_dns_records")
-analysis/tests/test_rotation.py:    ro.metrics = Mock()
-api/debian/ooni_download_geoip.py:            metrics.gauge("geoip_asn_epoch", m.build_epoch)
-api/debian/ooni_download_geoip.py:            metrics.gauge("geoip_asn_node_cnt", m.node_count)
-api/debian/ooni_download_geoip.py:            metrics.gauge("geoip_cc_epoch", m.build_epoch)
-api/debian/ooni_download_geoip.py:            metrics.gauge("geoip_cc_node_cnt", m.node_count)
-api/debian/ooni_download_geoip.py:        metrics.incr("ooni_geoip_checkfail")
-api/debian/ooni_download_geoip.py:    metrics.incr("ooni_geoip_updated")
-api/debian/ooni_download_geoip.py:metrics = statsd.StatsClient("127.0.0.1", 8125, prefix="ooni_download_geoip")
-api/debian/ooni_download_geoip.py:@metrics.timer("download_geoip")
-api/ooniapi/aggregation.py:from ooniapi.config import metrics
-api/ooniapi/aggregation.py:@metrics.timer("get_aggregated")
-api/ooniapi/auth.py:from ooniapi.config import metrics
-api/ooniapi/auth.py:@metrics.timer("user_login")
-api/ooniapi/auth.py:@metrics.timer("user_refresh_token")
-api/ooniapi/auth.py:@metrics.timer("user_register")
-api/ooniapi/citizenlab.py:from ooniapi.config import metrics
-api/ooniapi/citizenlab.py:    @metrics.timer("citizenlab_open_pr")
-api/ooniapi/citizenlab.py:    @metrics.timer("citizenlab_propose_changes")
-api/ooniapi/citizenlab.py:    @metrics.timer("citizenlab_repo_init")
-api/ooniapi/citizenlab.py:    @metrics.timer("citizenlab_repo_pull")
-api/ooniapi/citizenlab.py:    @metrics.timer("citizenlab_sync_state")
-api/ooniapi/citizenlab.py:        metrics.timing("citizenlab_lock_time", elapsed_ms)
-api/ooniapi/config.py:metrics = statsd.StatsClient("localhost", 8125, prefix="ooni-api")
-api/ooniapi/database.py:    Allows correlating query statements between API logs and metrics
-api/ooniapi/database.py:# query_time = Summary("query", "query", ["hash", ], registry=metrics.registry)
-api/ooniapi/incidents.py:from ooniapi.config import metrics
-api/ooniapi/incidents.py:@metrics.timer("post_update_incident")
-api/ooniapi/incidents.py:@metrics.timer("search_list_incidents")
-api/ooniapi/incidents.py:@metrics.timer("show_incident")
-api/ooniapi/measurements.py:from ooniapi.config import metrics
-api/ooniapi/measurements.py:        metrics.incr("msmt_body_found")
-api/ooniapi/measurements.py:    metrics.incr("msmt_body_not_found")
-api/ooniapi/measurements.py:        metrics.incr("msmt_not_found_in_jsonl")
-api/ooniapi/measurements.py:@metrics.timer("_fetch_jsonl_measurement_body_clickhouse")
-api/ooniapi/measurements.py:@metrics.timer("_fetch_jsonl_measurement_body_from_s3")
-api/ooniapi/measurements.py:@metrics.timer("fetch_measurement_body")
-api/ooniapi/measurements.py:@metrics.timer("_fetch_measurement_body_from_hosts")
-api/ooniapi/measurements.py:@metrics.timer("_fetch_measurement_body_on_disk_by_msmt_uid")
-api/ooniapi/measurements.py:@metrics.timer("get_measurement")
-api/ooniapi/measurements.py:@metrics.timer("get_measurement_meta")
-api/ooniapi/measurements.py:@metrics.timer("get_measurement_meta_by_uid")
-api/ooniapi/measurements.py:@metrics.timer("get_measurement_meta_clickhouse")
-api/ooniapi/measurements.py:@metrics.timer("get_msmt_feedback")
-api/ooniapi/measurements.py:@metrics.timer("get_raw_measurement")
-api/ooniapi/measurements.py:@metrics.timer("get_torsf_stats")
-api/ooniapi/measurements.py:@metrics.timer("list_measurements")
-api/ooniapi/measurements.py:@metrics.timer("submit_msmt_feedback")
-api/ooniapi/oonirun.py:from ooniapi.config import metrics
-api/ooniapi/oonirun.py:@metrics.timer("fetch_oonirun_descriptor")
-api/ooniapi/prio.py:from ooniapi.config import metrics
-api/ooniapi/prio.py:    metrics.gauge("test-list-urls-count", len(test_items))
-api/ooniapi/prio.py:@metrics.timer("fetch_prioritization_rules")
-api/ooniapi/prio.py:@metrics.timer("fetch_reactive_url_list")
-api/ooniapi/prio.py:@metrics.timer("generate_test_list")
-api/ooniapi/private.py:from ooniapi.config import metrics
-api/ooniapi/private.py:    metrics.gauge("check-in-test-list-count", len(webconn_test_items))
-api/ooniapi/probe_services.py:from ooniapi.config import metrics
-api/ooniapi/probe_services.py:    metrics.gauge("check-in-test-list-count", len(test_items))
-api/ooniapi/probe_services.py:        metrics.incr("geoip_asn_differs")
-api/ooniapi/probe_services.py:        metrics.incr("geoip_cc_differs")
-api/ooniapi/probe_services.py:        metrics.incr("geoip_ipaddr_found")
-api/ooniapi/probe_services.py:        metrics.incr("geoip_ipaddr_not_found")
-api/ooniapi/probe_services.py:            metrics.incr("probe_cc_asn_match")
-api/ooniapi/probe_services.py:            metrics.incr("probe_cc_asn_nomatch")
-api/ooniapi/probe_services.py:        metrics.incr("probe_legacy_login_successful")
-api/ooniapi/probe_services.py:        metrics.incr("probe_login_failed")
-api/ooniapi/probe_services.py:        metrics.incr("probe_login_failed")
-api/ooniapi/probe_services.py:        metrics.incr("probe_login_successful")
-api/ooniapi/probe_services.py:    metrics.incr("receive_measurement_count")
-api/ooniapi/probe_services.py:        metrics.incr("receive_measurement_discard_asn_0")
-api/ooniapi/probe_services.py:        metrics.incr("receive_measurement_discard_cc_zz")
-api/ooniapi/probe_services.py:@metrics.timer("list_collectors")
-api/ooniapi/probe_services.py:@metrics.timer("list_test_helpers")
-api/ooniapi/probe_services.py:@metrics.timer("open_report")
-api/ooniapi/probe_services.py:@metrics.timer("receive_measurement")
-api/ooniapi/rate_limit_quotas.py:from ooniapi.config import metrics
-api/ooniapi/rate_limit_quotas.py:    * metrics
-api/ooniapi/rate_limit_quotas.py:            metrics.decr("busy_workers_count")
-api/ooniapi/rate_limit_quotas.py:        metrics.incr("busy_workers_count")
-api/ooniapi/rate_limit_quotas.py:            # metrics.timing(timer_path, int(tdelta * 1000))  # ms
-api/ooniapi/rate_limit_quotas.py:            # TODO: implement API call timing metrics
-api/ooni_api_uploader.py:            metrics.incr("msmt_count")
-api/ooni_api_uploader.py:            metrics.incr("postcan_count")
-api/ooni_api_uploader.py:metrics = statsd.StatsClient("127.0.0.1", 8125, prefix="ooni_api_uploader")
-api/ooni_api_uploader.py:@metrics.timer("fill_jsonl")
-api/ooni_api_uploader.py:@metrics.timer("fill_postcan")
-api/ooni_api_uploader.py:@metrics.timer("total_run_time")
-api/ooni_api_uploader.py:@metrics.timer("update_db_table")
-api/ooni_api_uploader.py:@metrics.timer("upload_measurement")
-api/rate_limit_quotas.py:    * metrics
-api/tests/functional/test_private_explorer.py:# XXX this is commented out as the ingestion of these metrics happens outside of the pipeline
-detector/detector/detector.new.py:    """Generate gauge metrics showing the table sizes"""
-detector/detector/detector.new.py:    metrics.gauge("blocking_events_tblsize", bes)
-detector/detector/detector.new.py:    metrics.gauge("blocking_status_tblsize", bss)
-detector/detector/detector.new.py:metrics = statsd.StatsClient("localhost", 8125, prefix="detector")
-detector/detector/detector.new.py:@metrics.timer("extract_changes")
-detector/detector/detector.new.py:@metrics.timer("generate_rss_feed")
-detector/detector/detector.new.py:@metrics.timer("process_historical_data")
-detector/detector/detector.new.py:@metrics.timer("rebuild_feeds")
-detector/detector/detector.new.py:@metrics.timer("rebuild_status")
-detector/detector/detector.new.py:@metrics.timer("write_feed")
-detector/detector/detector.py:                metrics.incr("detected_blocked")
-detector/detector/detector.py:            metrics.incr("detected_blocked")
-detector/detector/detector.py:            metrics.incr("detected_cleared")
-detector/detector/detector.py:        metrics.incr("processed_msmt")
-detector/detector/detector.py:@metrics.timer("handle_new_measurement")
-detector/detector/detector.py:@metrics.timer("update_rss_feed_by_country")
-detector/detector/detector.py:@metrics.timer("update_rss_feed_global")
-detector/detector/detector.py:@metrics.timer("update_rss_feeds_by_cc_tname_inp")
-detector/detector/detector.py:@metrics.timer("upsert_change")
-detector/detector/detector.py:@metrics.timer("write_feed")
-detector/detector/detector.py:    t = metrics.timer("process_historical_data").start()
-detector/detector/detector_webapp.py:@metrics.timer("generate_charts")
-fastpath/fastpath/core.py:            metrics.gauge("deleted_cache_file_age", age_s)
-fastpath/fastpath/core.py:            metrics.gauge("fingerprint_body_match_location", idx)
-fastpath/fastpath/core.py:        metrics.gauge(f"{name}_per_s", item_count / delta)
-fastpath/fastpath/core.py:            metrics.incr("discarded_measurement")
-fastpath/fastpath/core.py:            metrics.incr("discarded_measurement")
-fastpath/fastpath/core.py:            metrics.incr("discarded_measurement")
-fastpath/fastpath/core.py:        metrics.incr("unhandled_exception")
-fastpath/fastpath/core.py:@metrics.timer("clean_caches")
-fastpath/fastpath/core.py:@metrics.timer("full_run")
-fastpath/fastpath/core.py:@metrics.timer("match_fingerprints")
-fastpath/fastpath/core.py:@metrics.timer("prepare_fingerprints")
-fastpath/fastpath/core.py:@metrics.timer("score_http_invalid_request_line")
-fastpath/fastpath/core.py:@metrics.timer("score_measurement")
-fastpath/fastpath/core.py:@metrics.timer("score_measurement_facebook_messenger")
-fastpath/fastpath/core.py:@metrics.timer("score_measurement_hhfm")
-fastpath/fastpath/core.py:@metrics.timer("score_measurement_telegram")
-fastpath/fastpath/core.py:@metrics.timer("score_measurement_whatsapp")
-fastpath/fastpath/core.py:@metrics.timer("score_ndt")
-fastpath/fastpath/core.py:@metrics.timer("score_tcp_connect")
-fastpath/fastpath/core.py:@metrics.timer("score_vanilla_tor")
-fastpath/fastpath/core.py:@metrics.timer("score_web_connectivity")
-fastpath/fastpath/db.py:@metrics.timer("clickhouse_upsert_openvpn_obs")
-fastpath/fastpath/db.py:@metrics.timer("clickhouse_upsert_summary")
-fastpath/fastpath/db.py:@metrics.timer("fetch_fingerprints")
-fastpath/fastpath/reprocessor.py:        metrics.incr("broken_measurement")
-fastpath/fastpath/reprocessor.py:        metrics.incr("discarded_measurement")
-fastpath/fastpath/reprocessor.py:        metrics.incr("discarded_measurement")
-fastpath/fastpath/reprocessor.py:        metrics.incr("discarded_measurement")
-fastpath/fastpath/reprocessor.py:        metrics.incr("discarded_measurement")
-fastpath/fastpath/reprocessor.py:        metrics.incr("duplicate_measurement")
-fastpath/fastpath/reprocessor.py:metrics = statsd.StatsClient("127.0.0.1", 8125, prefix="reprocessor")
-fastpath/fastpath/reprocessor.py:@metrics.timer("finalize_jsonl")
-fastpath/fastpath/reprocessor.py:@metrics.timer("process_can")
-fastpath/fastpath/reprocessor.py:@metrics.timer("process_measurement")
-fastpath/fastpath/reprocessor.py:@metrics.timer("total_run_time")
-fastpath/fastpath/reprocessor.py:@metrics.timer("upload_measurement")
-fastpath/fastpath/s3feeder.py:        metrics.gauge("fetching", 0)
-fastpath/fastpath/s3feeder.py:        metrics.gauge("fetching", 1)
-fastpath/fastpath/s3feeder.py:        metrics.gauge("process_s3_measurements_eta", eta)
-fastpath/fastpath/s3feeder.py:        metrics.gauge("s3_download_percentage", _cb.total_count / _cb.total_size * 100)
-fastpath/fastpath/s3feeder.py:    metrics.gauge("s3_download_speed_avg_Mbps", 0)
-fastpath/fastpath/s3feeder.py:            metrics.gauge("s3_download_speed_avg_Mbps", speed)
-fastpath/fastpath/s3feeder.py:            metrics.incr("cache_hit")
-fastpath/fastpath/s3feeder.py:            metrics.incr("cache_miss")
-fastpath/fastpath/s3feeder.py:                        metrics.incr("yaml_normalization")
-fastpath/fastpath/s3feeder.py:                metrics.incr("yaml_normalization")
-fastpath/fastpath/s3feeder.py:@metrics.timer("fetch_cans")
-fastpath/fastpath/s3feeder.py:# @metrics.timer("fetch_cans_for_a_day_with_cache")
-fastpath/fastpath/tests/test_functional_nodb.py:    core.metrics = Mock()
-fastpath/fastpath/tests/test_functional_nodb.py:def mock_metrics():
-fastpath/fastpath/tests/test_functional.py:# TODO mock out metrics
-```
-
 
 
 ## Prometheus
@@ -604,6 +466,19 @@ following playbook:
 Most of the metrics are collected by scraping Prometheus endpoints,
 Netdata, and using node exporter. The web UI is accessible at
 <https://prometheus.ooni.org>
+
+### Blackbox exporter
+Blackbox exporter is part of Prometheus. It's a daemon that performs HTTP
+probing against other hosts without relying on local agents (hence the name Blackbox)
+and feeds the generated datapoints into Promethous.
+
+See <https://github.com/prometheus/blackbox_exporter>
+
+It is deployed by
+[Ansible](#tool:ansible) on the [monitoring.ooni.org](#monitoring.ooni.org)&thinsp;🖥
+
+See
+[Updating Blackbox Exporter runbook](#updating-blackbox-exporter-runbook)&thinsp;📒
 
 
 ## Grafana dashboards
@@ -639,6 +514,38 @@ Alert flow:
 
 ![Diagram](https://kroki.io/blockdiag/svg/eNp1jUEKwjAQRfc9xTBd9wSioBtxV3ApIpNmYktjJiQpCuLdTbvQIDirP7zH_8pKN-qBrvCsQLOhyaZL7MkzrCHI5DRrJY9VBW2QG6eepwinTqyELGDN-YzBcxb2gQw5-kOxFnFDoyRFLBVjZmlRioVm86nLEY-WuhG27QGXt6z6YvIef4dmugtyjxwye70BaPFK1w==)
 
+<!--
+blockdiag {
+ default_shape = roundedbox;
+ Prometheus [color = "#eeeeff"];
+ Grafana [color = "#eeeeff"];
+ "#ooni-bots" [color = "#ffeeee"];
+ Prometheus -> Grafana -> "Slack API" -> "#ooni-bots" -> "Slack app";
+ "#ooni-bots" -> "Browser";
+}
+-->
+
+The diagram does not explicitly include alertmanager. It is part of Prometheus and receives alerts and routes them to Slack.
+
+More detailed diagram:
+
+```mermaid
+flowchart LR
+    P(Prometheus) -- datapoints --> G(Grafana)
+    G --> A(Alertmanager)
+    A --> S(Slack API) --> O(#ooni-bots)
+    P --> A
+    O --> R(Browser / apps)
+    J(Jupyter notebook) --> A
+    classDef box fill:#eeffee,stroke:#777,stroke-width:2px;
+    class P,G,A,S,O,R,J box;
+```
+
+In the diagram Prometheus receives, stores and serves datapoints and has some alert rules to trigger alerts.
+Grafana acts as a UI for Prometheus and also triggers alerts based on alert rules configured in Grafana itself.
+
+Alertmanager is pretty simple - receives alerts and sends notification to Slack.
+
 The alert rules are listed at <https://grafana.ooni.org/alerting/list>
 The list also shows which alerts are firing at the moment, if any. There
 is also a handful of alerts configured in [Prometheus](#prometheus)&thinsp;🔧
@@ -653,7 +560,8 @@ See [Grafana editing](#grafana-editing)&thinsp;📒 and
 There are also many dashboards and alerts configured in
 [Jupyter Notebook](#jupyter-notebook)&thinsp;🔧. These are meant for metrics that require more
 complex algorithms, predictions and SQL queries that cannot be
-implemented using [Grafana](#grafana)&thinsp;🔧.
+implemented using [Grafana](#grafana)&thinsp;🔧 e.g. when using machine learning or Pandas.
+See [Ooniutils microlibrary](#ooniutils-microlibrary)&thinsp;💡 for details.
 
 On many dashboards you can set the averaging timespan and the target
 hostname using fields on the top left.
@@ -849,6 +757,26 @@ monitoring.ooni.org using [Vector](#vector)&thinsp;🔧.
 
 ![Diagram](https://kroki.io/blockdiag/svg/eNrFks9qwzAMxu95CpNel_gYWOlgDEqfYJdRiv_IiYltBccphdF3n5yyNellt01H6ZO_nyxJh6rXVrTss2AajJhcOo2dGIDtWMQpaNASL9uCvQ6Ds0oki4FVL-wdVMJYjUCKuEhEUGDPt9QbNfQHnEZ46P9Q6DCSQ7kxBijKIynWTy40WWFM-cS6CGaXU11Kw_jMeWtTN8laoeeIwXIpVE_tlUY1eQhptuPSoeRe2PBdP63qtdeb8-y9xPgZ5N9A7t_3xwwqG3fZOHMUrKVDGPKBUCzWuF1vjIivD-LfboLCCQkuT-EJmcQ2tHWmrzG25U1yn71p9vumKWen6xdypu8x)
 
+<!--
+blockdiag {
+ default_shape = roundedbox;
+ Application -> Vector-sender -> Vector-receiver -> ClickHouse;
+ Application [color = "#ffeeee"];
+ Vector-sender [color = "#eeeeff", href= = "@@vector"];
+ Vector-receiver [color = "#eeeeff", href= = "@@vector"];
+ ClickHouse [color = "#eeeeff", href= = "@@clickhouse"];
+
+ group {
+    Application; Vector-sender;
+ }
+
+ group {
+    Vector-receiver -> ClickHouse;
+    label = "monitoring.ooni.org";
+    color = "#77FF77";
+ }
+}
+-->
 There is a dedicated ClickHouse instance on monitoring.ooni.org used to
 collect logs. See the [ClickHouse instance for logs](#clickhouse-instance-for-logs)&thinsp;⚙.
 This is done to avoid adding unnecessary load to the production database
@@ -990,14 +918,13 @@ Nettest specifications are kept at
 
 
 ## Web connectivity test
-Nettest for HTTP/HTTPS connectivity named `web_connectivity`. See
-<https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md>
+Nettest for HTTP/HTTPS connectivity named `web_connectivity`.
+See <https://github.com/ooni/spec/blob/master/nettests/ts-017-web-connectivity.md>
 
 
 ## Signal test
-Nettest for [Signal Private Messenger](https://signal.org/) named
-`signal` See
-<https://github.com/ooni/spec/blob/master/nettests/ts-029-signal.md>
+Nettest for [Signal Private Messenger](https://signal.org/) named `signal`
+See <https://github.com/ooni/spec/blob/master/nettests/ts-029-signal.md>
 
 
 # API
@@ -1020,8 +947,8 @@ specification is published at <https://api.ooni.io/apispec_1.json>
 
 The file is also tracked at
 <https://github.com/ooni/backend/blob/0ec9fba0eb9c4c440dcb7456f2aab529561104ae/api/docs/apispec.json>
-It is checked for consistency by CI in the [API end-to-end
-test](#topic:e2e-test), see
+It is checked for consistency by CI in the
+[API end-to-end test](#api-end-to-end-test)&thinsp;💡, see
 <https://github.com/ooni/backend/blob/0ec9fba0eb9c4c440dcb7456f2aab529561104ae/.github/workflows/test_new_api.yml#L27>
 
 To regenerate the spec file when implementing changes to the API use:
@@ -1334,6 +1261,9 @@ This entry point provides a list of test helpers to the probes:
 > amount requests per second they receive should be consistent across
 > hosts, except for `0.th.ooni.org`.
 
+`0.th.ooni.org` is treated differently from other test helpers:
+it receives less traffic to allow testing new releases with lower impact.
+
 See
 <https://github.com/ooni/backend/blob/86c6c7e1d297fb8361a162f6081e5e138731e492/api/ooniapi/probe_services.py#L480>
 
@@ -1460,6 +1390,24 @@ For changing prioritization rules see
 
 ![Diagram](https://kroki.io/blockdiag/svg/eNrNU01Lw0AUvPdXLOnVNPeKgkiEgmixvYmE_XjbLN3sC7svIoj_3axpY0MTb6J7nZllZpgnLMq9MnzH3mdMgeaNpSKUvAZ2xTw2ToES-HY5Y8nao4CQsGeJFn0LJ3OtoX3JS4Q1D1RzKhlxYaGlHX8Ba00d4IKVHnSUlUR1WGbZzlDZiIXEKkN0JhNc7sGpVKFsKnDEyaDLhEWRVdy4I14M8EWl5rL1SeBDwYMrCAIV1gRKOyNf5hpvi9ob9IYMhD-wODRwam3c_D_r72a9WjIPEswrsCpUNJhBHIHWHfPuMIMxwi9GOK7vxG6se8pmt2WWXo9Hs1yAjZr142Y72UBUn8QdEX2jkXt2Ib1i9bDJn7bjdxSVkxvpf-AN4c976rMeeumlm_w-v92eFRf5_cn3ZFmC3KfGRfrHJwZAcmE=)
 
+<!--
+blockdiag {
+ default_shape = roundedbox;
+ "Probes" [color = "#ffeeee"];
+ "fastpath table" [shape = ellipse, href = "@@counters_asn_test_list-table"];
+ "url_priorities table" [shape = ellipse, href = "@@url_priorities-table"];
+ "counters_asn_test_list" [shape = ellipse, href = "@@counters_asn_test_list-table"];
+ "API: receive msmt" [color = "#eeeeff"];
+ "Fastpath" [color = "#eeeeff", href = "@@fastpath"];
+ "API: prio" [color = "#eeeeff"];
+ Probes -> "API: receive msmt" [label = "POST"];
+ "API: receive msmt" -> "Fastpath" [label = "POST"];
+ "Fastpath" -> "fastpath table" [label = "INSERT"];
+ "fastpath table" -> "counters_asn_test_list" [label = "auto"];
+ "counters_asn_test_list" -> "API: prio" [label = "SELECT"];
+ "API: prio" -> "Probes" [label = "check-in"];
+}
+-->
 Ellipses represent data; rectangles represent processes. Purple
 components belong to the backend. Click on the image and then click on
 each shape to see related documentation.
@@ -1835,6 +1783,23 @@ flowchart LR
 
 ![Diagram](https://kroki.io/blockdiag/svg/eNq1kctqwzAQRff-isHZNhFpdg0tdNldoMsQgh7jWLGkUfWAlNJ_rxwS1y54WW0kzbnM444wJDul-Qm-KlDY8GzSMbbcIzxDoOwUKkGXbQX1-wbOkZypYX8XoDHaRzzcsKeYJHdxRqF07OAjY8YZwTU9JC7MjGIXSGCEvctWYEBV6LqPv-7eJsHHB2gDNuVVtyn5-MTYSac2i5Uky4icZoLLDp1aKpLZoks8aXJMGBLMcu3u_DjhK6sW3Ou6r5m9Ia4wTApv_rFwsSPQ5bMeGbF8uY5erom55T9017Nhc-O2b2DY2V82Xsa2-vVekqHQD7hoGiyn7-f7B2qbw7M=)
 
+<!--
+blockdiag {
+ default_shape = roundedbox;
+ "S3 jsonl" [shape = ellipse];
+ "S3 postcans" [shape = ellipse];
+ "disk queue" [shape = ellipse];
+ "jsonl table" [shape = ellipse];
+ Probes [numbered = 1];
+ API [numbered = 2, href = "@@api"];
+ uploader [numbered = 3, href = "@@haproxy"];
+ Probes -> API -> "disk queue" -> uploader -> "S3 jsonl";
+ uploader -> "S3 postcans";
+ uploader -> "jsonl table";
+
+ Probes [color = "#ffeeee"];
+}
+-->
 Ellipses represent data; rectangles represent processes. Click on the
 image and then click on each shape to see related documentation.
 
@@ -1969,6 +1934,8 @@ troubleshooting.
 
 The address of the test helpers are provided to the probes by the API in
 [Test helpers list](#test-helpers-list)&thinsp;🐝.
+`0.th.ooni.org` is treated differently from other test helpers.
+
 
 
 ## Analysis
@@ -1983,6 +1950,32 @@ Deployed using the [analysis package](#analysis-package)&thinsp;📦
 Data flows from various updaters:
 
 ![Diagram](https://kroki.io/blockdiag/svg/eNrFVF1LwzAUfd-vCN2rW94VhaGoAxmF7W3IuGlu17A0N6SpiuJ_t1tXSLuOobDZt_vRc87N_RCako1UsGZfAyYxhVL7VZGBRXbLHJVGohT0cTNg0WQ-Yw4tRWx0V1ulleDR1Q4oTI4emAehceeaxNP2f8sGGLVWtsDXbfgJaRoHwLUt6d1oAtmg8zdwXCvBiYwCq0KCEKGX4l559YnmBUTAEzhbdQT-g1IOgE7R7RG6aVcsc5hWdpR5b4trztfKZ6UYJ5TvKuQCkg0aOZKUlDkaD16R4UKT4Dko08RXrfg4l8OkJtcgRjX5TtLDbM5SZdbo7Jh5oS8qaU_slPHFSpoiFPYIhbfgs0rQ-fgbjpoxUBOMQ8vdGojDt6u8je4_IT4vFvGvIXtHrQfpvxq7RQ8727kHF5S1Z26NWW8vlglpclsNQ6y-NI26-3sqtXUFj-QcHrRjYPG0L3bOl6oOaXcNL8kfbub3D9DuO-g=)
+
+<!--
+blockdiag {
+ default_shape = roundedbox;
+ "ASN repo" -> "ASN updater" -> "asnmeta table" -> API;
+ "ASN repo" [shape = ellipse];
+ "GeoIP repo" -> "GeoIP downloader" -> "/var/lib/ooniapi" -> API;
+ "GeoIP repo" [shape = ellipse];
+ "CitizenLab repo" -> "CitizenLab updater" -> "CitizenLab table" -> API;
+ "CitizenLab repo" [shape = ellipse];
+ "CitizenLab table" [shape = ellipse, href = "@@citizenlab-table"];
+ "DNS fingerp. tbl" [shape = ellipse, href = "@@fingerprints_dns-table"];
+ "Fastpath" [href = "@@fastpath"];
+ "Fingerprints repo" -> "Fingerprints updater" -> "DNS fingerp. tbl" -> Fastpath;
+ "Fingerprints repo" -> "Fingerprints updater" -> "HTTP fingerp. tbl" -> Fastpath;
+ "Fingerprints repo" [shape = ellipse];
+ "HTTP fingerp. tbl" [shape = ellipse, href = "@@fingerprints_http-table"];
+ "asnmeta table" [shape = ellipse, href = "@@asnmeta-table"];
+ "Fingerprints updater" [color = "#eeeeff"];
+ "CitizenLab updater" [color = "#eeeeff"];
+ "ASN updater" [color = "#eeeeff"];
+ "GeoIP downloader" [color = "#eeeeff"];
+ "API" [color = "#eeeeff", href = "@@api"];
+ "Fastpath" [color = "#eeeeff", href = "@@fastpath"];
+}
+-->
 
 Ellipses represent data; rectangles represent processes. Purple
 components belong to the backend. Click on the image and then click on
@@ -2528,19 +2521,15 @@ same major+minor version is used across the team.
 
 Secrets are stored in vaults using the `ansible/vault` script as a
 wrapper for `ansible-vault`. Store encrypted variables with a `vault_`
-prefix to make world \[a more grepable
-place\](<http://docs.ansible.com/ansible/playbooks_best_practices.html#best-practices-for-variables-and-vaults>)
+prefix to allow using grep: <http://docs.ansible.com/ansible/playbooks_best_practices.html#best-practices-for-variables-and-vaults>
 and link location of the variable using same name without prefix in
-corresponding `vars.yml`. `scripts/ansible-syntax-check` checks links
-between vaults and plaintext files during Travis build. `ansible/play`
-wrapper for `ansible-playbook` will execute a playbook with proper vault
-secret and inventory.
+corresponding `vars.yml`.
 
 In order to access secrets stored inside of the vault, you will need a
 copy of the vault password encrypted with your PGP key. This file should
 be stored inside of `~/.ssh/ooni-sysadmin.vaultpw.gpg`.
 
-<https://github.com/ooni/sysadmin/blob/master/ansible/roles/base-bookworm/meta/main.yml>
+The file should be provided by other teammates and GPG-encrypted for your own GPG key.
 
 
 ### SSH Configuration
@@ -2612,6 +2601,21 @@ close as possible to the ansible step that deploys a service. For
 example:
 <https://github.com/ooni/sysadmin/blob/master/ansible/roles/base-bookworm/tasks/main.yml#L110>
 
+> **note**
+> Ansible announces its runs on [ooni-bots](##ooni-bots)&thinsp;💡 unless running with `-C`.
+
+### The root account
+
+Runbooks use ssh to log on the hosts using your own account and leveraging `sudo` to act as root.
+
+The only exception is when a new host is being deployed - in that case ansible will log in as root to create
+individual accounts and lock out the root user.
+
+When running the entire runbook ansible might try to run it as root.
+This can be avoided by selecting only the required tags using `-t <tagname>`.
+
+Ideally the root user should be disabled after succesfully creating user accounts.
+
 
 ### Roles layout
 Ansible playbooks use multiple roles (see
@@ -2671,6 +2675,9 @@ flowchart LR
         style X fill:#eeffee
 ```
 
+> **note**
+> When deploying files or updating files already existing on the hosts it can be useful to add a note e.g. "Deployed by ansible, see <role_name>".
+> This helps track down how files on the host were modified and why.
 
 ## Creating new playbooks runbook
 This runbook describe how to add new runbooks or modify existing runbooks to support new hosts.
@@ -2717,7 +2724,7 @@ It includes:
 
  * [Vector](#tool:vector) (see [Log management](#log-management)&thinsp;💡)
 
- * local [Netdata](#netdata)&thinsp;🔧, Blackbox exporter etc.
+ * local [Netdata](#tool:netdata), [Blackbox exporter](#blackbox-exporter)&thinsp;🔧, etc
 
  * [Prometheus](#prometheus)&thinsp;🔧 at <https://prometheus.ooni.org>
 
@@ -2745,11 +2752,41 @@ Steps:
     review the output
 
 
+### Updating Blackbox Exporter runbook
+This runbook describes updating [Blackbox exporter](#blackbox-exporter)&thinsp;🔧.
+
+The `blackbox_exporter` role in ansible is pulled in by the `deploy-monitoring.yml`
+runbook.
+
+The configuration file is at `roles/blackbox_exporter/templates/blackbox.yml.j2`
+together with `host_vars/monitoring.ooni.org/vars.yml`.
+
+To add a simple HTTP[S] check, for example, you can copy the "ooni website" block.
+
+Edit it and run the deployment of the monitoring stack as described in the previous subchapter.
+
+
 ## Etckeeper
 Etckeeper <https://etckeeper.branchable.com/> is deployed on backend
 hosts and keeps the `/etc` directory under git version control. It
 commits automatically on package deployment and on timed runs. It also
 allows doing commits manually.
+
+To check for history of the /etc directory:
+
+```bash
+sudo -i
+cd /etc
+git log --raw
+```
+
+And `git diff` for unmerged changes.
+
+Use `etckeeper commit <message>` to commit changes.
+
+:::tip
+Etckeeper commits changes automatically when APT is used or on daily basis, whichever comes first.
+:::
 
 
 ## Team credential repository
@@ -4350,6 +4387,38 @@ The notebook will show how the measurement quantity and coverage increased.
 <https://jupyter.ooni.org/notebooks/notebooks/2023-05-18%20TL%20campaign.ipynb>
 
 
+### Easy charting notebook
+This notebook contains examples that can be used as building blocks for various
+investigations and dashboards.
+
+It provides the `easy_msm_count_chart` helper function.
+Such functions shows measurement counts over time, grouped over a dimension.
+
+By default it shows maximum 6 different values (color bands).
+This means you are not seeing the total amount of measurements in the charts.
+
+You can add the following parameters, all optional:
+- `title`: free-form title
+- `since`: when to start, defaults to "3 months". You can use day, week, month, year
+- `until`: when to stop, defaults to now. You can use day, week, month, year
+- `granularity`: how big is each time slice: day, week, month. Defaults to day
+- `dimension`: what dimension to show as different color bands. Defaults to `software_version`
+- `dimension_limit`: how many values to show as different color bands. **Defaults to 6.**
+
+The following parameters add filtering. The names should be self explanatory.
+The default value is no filter (count everything).
+- `filter_software_name`: looks only at measurement for a given software name, e.g. "ooniprobe-android".
+- `filter_domain`
+- `filter_engine_name`
+- `filter_input`
+- `filter_probe_asn`
+- `filter_probe_cc`
+- `filter_test_name`
+
+<https://jupyter.ooni.org/notebooks/notebooks/easy_charts.ipynb>
+
+
+
 ## Grafana
 Grafana <https://grafana.com/> is a popular platform for monitoring and
 alarming.
@@ -5330,6 +5399,16 @@ A Python script that automates package builds and CI/CD workflows:
  * Generates a Debian archive on S3. Uploads .deb files into it to make
     them available for deployment.
 
+The script has been designed to address the following requirements:
+
+ * Remove dependencies from 3rd party services that might become expensive or be shut down.
+ * Serverless: do not require a dedicated CI/CD server
+ * Stateless: allow the script to run in CI and on developer desktops without requiring a local database, cache etc.
+ * Compatible: generate a package archive that can be used by external users to install ooniprobe on their hosts using standard tooling.
+ * CI-friendly: minimize the amount of data that needs to be deployed on servers to update a backend component or probe.
+ * Reproducible: given the same sources the generated output should be virtually identical across different systems. I.e. it should not depend on other software installed locally.
+
+
 It is used in the CI workflow as:
 
 ```bash
@@ -5583,6 +5662,99 @@ On Android devices the following apps can be used:
  * [Grafana](#grafana)&thinsp;🔧 viewer
     <https://play.google.com/store/apps/details?id=it.ksol.grafanaview>
 
+## Tiers and severities
+
+When designing architecture of backend components or handling incidents it can be useful to have
+defined severities and tiers.
+
+A set of guidelines are described at <https://google.github.io/building-secure-and-reliable-systems/raw/ch16.html#establish_severity_and_priority_models>
+This section presets a simplified approach to prioritizing incident response.
+
+In this case there is no distinction between severity and priority. Impact and response time are connected.
+
+Incidents and alarms from monitoring can be classified by severity levels based on their impact:
+
+ - 1: Serious security breach or data loss; serious loss of privacy impacting users or team members; legal risks.
+ - 2: Downtime impacting service usability for a significant fraction of users; Serious security vulnerability.
+      Examples: probes being unable to submit measurements
+ - 3: Downtime or poor performance impacting secondary services; anything that can cause a level 2 event if not addressed within 24h; outages of monitoring infrastructure
+ - 4: Every other event that requires attention within 7 days
+
+Based on the set of severities, components can be classified in tier as follows:
+
+ - tier 1: Anything that can cause a severity 1 (or less severe) event.
+ - tier 2: Anything that can cause a severity 2 (or less severe) event but not a severity 1.
+ - tier 3: Anything that can cause a severity 3 (or less severe) event but not a severity 1 or 2.
+ - ...and so on
+
+### Relations and dependencies between services
+
+Tiers are useful during design and deployment as a way to minimize risk of outages and avoid unexpected cascading failures.
+
+Having a low tier value should not be treated as a sign of "importance" for a component, but a liability.
+
+Pre-production deployment stages (e.g. testbed) have tier level >= 5
+
+In this context a component can be a service as a whole, or a running process (daemon), a host, a hardware device, etc.
+A component can contain other components.
+
+A component "A" is said to "hard depend" on another component "B" if an outage of B triggers an outage of A.
+
+It can also "soft depend" on another component if an outage of the latter triggers only a failure of a subsystem, or an ancillary feature or a reasonably short downtime.
+
+Regardless of tiers, components at a higher stage, (e.g. production) cannot depend and/or receive data from lower stages. The opposite is acceptable.
+
+Components can only hard-depend on other components at the same tier or with lower values.
+E.g. a Tier 2 component can depend on a Tier 1 but not the other way around.
+If it happens, the Tier 2 component should be immediatly re-classified as Tier 1 and treated accordingly (see below).
+
+E.g. anything that handles real-time failover for a service should be treated at the same tier (or lower value) as the service.
+
+Redundant components follow a special rule. For example, the "test helper" service provided to the probes, as a whole, should be considered tier 2 at least,
+as it can impact all probes preventing them from running tests succesfully.
+Yet, test helper processes and VMs can be considered tier 3 or even 4 if they sit behind a load balancer that can move traffic away from a failing host reliably
+and with no significant downtime.
+
+Example: An active/standby database pair provides a tier 2 service. An automatic failover tool is triggered by a simple monitoring script.
+Both have to be labeled tier 2.
+
+
+### Handling incidents
+
+Depending on the severity of an event a different workflow can be followed.
+
+An example of incident management workflow can be:
+
+| Severity | Response time | Requires conference call | Requires call leader | Requires postmortem | Sterile |
+| -------- | ------- | ------ | -------- | ------- | ------ |
+| 1 | 2h | Yes | Yes | Yes | Yes |
+| 2 | 8h | Yes | No | Yes | Yes |
+| 3 | 24h | No | No | No | Yes |
+| 4 | 7d | No | No | No | No |
+
+The term "sterile" is named after <https://en.wikipedia.org/wiki/Sterile_flight_deck_rule> - during the investigation the only priority should be to solve the issue at hand.
+Other investigations, discussions, meetings should be postponed.
+
+When in doubt around the severity of an event, always err on the safe side.
+
+
+### Regular operations
+
+Based on the tier of a component, development and operation can follow different rules.
+
+An example of incident management workflow can be:
+
+| Tier | Require architecture review | Require code review | Require 3rd party security review | Require Change Management |
+| -------- | ------- | ------ | -------- | ------- |
+| 1 | Yes | Yes | Yes | Yes |
+| 2 | Yes | Yes | No | No |
+| 3 | No | Yes | No | No |
+| 4 | No | No | No | No |
+
+"Change Management" refers to planning operational changes in advance and having team members review the change to be deployed in advance.
+
+E.g. scheduling a meeting to perform a probe release, have 2 people reviewing the metrics before and after the change.
+
 
 ## Redundant notifications
 If needed, a secondary channel for alert notification can be set up
@@ -5705,8 +5877,30 @@ Steps:
 9.  Review the charts on [Test helpers dashboard](#test-helpers-dashboard)&thinsp;📊
     during and after the rotation.
 
-Query to be run against ClickHouse on
-[monitoring.ooni.org](#monitoring.ooni.org)&thinsp;🖥:
+10. Summarize traffic hitting a test helper using the following commands:
+
+    Top 10 miniooni probe IP addresses (Warning: this is sensitive data)
+
+    `tail -n 100000 /var/log/nginx/access.log | grep miniooni | cut -d' ' -f1|sort|uniq -c|sort -nr|head`
+
+    Similar, with anonimized IP addresses:
+
+    `grep POST /var/log/nginx/access.log | grep miniooni | cut -d'.' -f1-3 | head -n 10000 |sort|uniq -c|sort -nr|head`
+
+    Number of requests from miniooni probe in 10-minutes buckets:
+
+    `grep POST /var/log/nginx/access.log | grep miniooni | cut -d' ' -f4 | cut -c1-17 | uniq -c`
+
+    Number of requests from miniooni probe in 1-minute buckets:
+
+    `grep POST /var/log/nginx/access.log | grep miniooni | cut -d' ' -f4 | cut -c1-18 | uniq -c`
+
+    Number of requests grouped by hour, cache HIT/MISS/etc, software name and version
+
+    `head -n 100000 /var/log/nginx/access.log | awk '{print $4, $6, $13}' | cut -c1-15,22- | sort | uniq -c | sort -n`
+
+To extract data from the centralized log database
+on [monitoring.ooni.org](#monitoring.ooni.org)&thinsp;🖥 you can use:
 
 ``` sql
 SELECT message FROM logs
@@ -5714,6 +5908,10 @@ WHERE SYSLOG_IDENTIFIER = 'oohelperd'
 ORDER BY __REALTIME_TIMESTAMP DESC
 LIMIT 10
 ```
+
+> **note**
+> The table is indexed by `__REALTIME_TIMESTAMP`. Limiting the range by time can significantly increase query performance.
+
 
 See [Selecting test helper for rotation](#selecting-test-helper-for-rotation)&thinsp;🐞
 
@@ -5733,9 +5931,15 @@ https://jupyter.ooni.org/notebooks/notebooks/android_probe_release_msm_drop_inve
 During an investigation it can be good to create a dedicated Jupyter notebook.
 
 We started with reviewing:
+
  * <https://jupyter.ooni.org/view/notebooks/jupycron/autorun_android_probe_release.html>
+   No issues detected as the charts show a short timespan.
  * The charts on [Test helpers dashboard](#test-helpers-dashboard)&thinsp;📊.
+   No issues detected here.
  * The [API and fastpath](#api-and-fastpath)&thinsp;📊 dashboard.
+   No issues detected here.
+ * The [Long term measurements prediction notebook](#long-term-measurements-prediction-notebook)&thinsp;📔
+   The decrease was clearly showing.
 
 Everything looked OK in terms of backend health. We then generated the following charts.
 
@@ -5748,11 +5952,11 @@ To be used you only need to import the
 %run ooniutils.ipynb
 ```
 
-The "t" lable is commonly used on existing notebooks to refer to hour/day/week time slices.
+The "t" label is commonly used on existing notebooks to refer to hour/day/week time slices.
 
 We want to plot how many measurements we are receiving from Ooniprobe Android in unattended runs, grouped by day and by `software_version`.
 
-The last line genrates an area chart using Altair. Notice that the `x` and `y` and `color` parameters match the 3 columns extracted by the `SELECT`.
+The last line generates an area chart using Altair. Notice that the `x` and `y` and `color` parameters match the 3 columns extracted by the `SELECT`.
 
 The `GROUP BY` is performed on 2 of those 3 columns, while `COUNT(*)` is counting how many measurements exist in each t/software_version "bucket".
 
@@ -5794,9 +5998,8 @@ The following Python snippet uses nested SQL queries. The inner query groups mea
 and counts how many measurements are related to each `report_id`.
 The outer query "ignores" the `report_id` value and `quantile()` is used to extract the 50 percentile of `msm_cnt`.
 
-:::tip
-The use of double '%%' in `LIKE` is required to escape the `%` wildcard.
-:::
+> **note**
+> The use of double `%%` in `LIKE` is required to escape the `%` wildcard. The wildcard is used to match any amount of characters.
 
 ``` python
 x = click_query("""
@@ -5827,8 +6030,16 @@ The output shows that indeed the number of measurements for each run is signific
 
 ![chart](images/msm_drop_investigation_4.png)
 
+To update the previous Python snippet to group measurements by a different field, change `software_version` into the new column name.
+For example use `probe_cc` to show a chart with a breakdown by probe country name. You should change `software_version` once in each SELECT part,
+then in the last two `GROUP BY`, and finally in the `color` line at the bottom.
 
-We implemented a change to the API to improve logging the list of tests returned at check-in: https://github.com/ooni/backend/pull/781
+We did such change to confirm that all countries were impacted in the same way. (The output is not included here as not remarkable)
+
+Also, `mark_line` on the bottom line is used to create line charts. Switch it to `mark_area` to generate *stacked* area charts.
+See the previous two charts as examples.
+
+We implemented a change to the API to improve logging the list of tests returned at check-in: <https://github.com/ooni/backend/pull/781>
 and reviewed monitored the logs using `sudo journalctl -f -u ooni-api`.
 
 The output showed that the API is very often returning 100 URLs to probes.
@@ -5861,10 +6072,9 @@ alt.Chart(x).mark_line().encode(x='t', y='deltaq', color='software_version').pro
 
 The chart showed that the tests are indeed running for a shorter amount of time.
 
-:::tip
-Percentiles can be more meaningful then averages.
-To calculate quantiles in ClickHouse use `quantile(<fraction>)(<column_name>)`.
-:::
+> **note**
+> Percentiles can be more meaningful then averages.
+> To calculate quantiles in ClickHouse use `quantile(<fraction>)(<column_name>)`.
 
 Example:
 
@@ -5923,6 +6133,31 @@ To summarize:
  * Both the number of measurements per run and the run time decreased in the new releases.
 
 
+## Weekly measurements review runbook
+On a daily or weekly basis the following dashboards and Jupyter notebooks can be reviewed to detect unexpected patterns in measurements focusing on measurement drops, slowdowns or any potential issue affecting the backend infrastructure.
+
+When browsing the dashboards expand the time range to one year in order to spot long term trends.
+Also zoom in to the last month to spot small glitches that could otherwise go unnoticed.
+
+Review the [API and fastpath](#api-and-fastpath)&thinsp;📊 dashboard for the production backend host[s] for measurement flow, CPU and memory load,
+timings of various API calls, disk usage.
+
+Review the [Incoming measurements notebook](#incoming-measurements-notebook)&thinsp;📔 for unexpected trends.
+
+Quickly review the following dashboards for unexpected changes:
+
+ * [Long term measurements prediction notebook](#long-term-measurements-prediction-notebook)&thinsp;📔
+ * [Test helpers dashboard](#test-helpers-dashboard)&thinsp;📊
+ * [Test helper failure rate notebook](#test-helper-failure-rate-notebook)&thinsp;📔
+ * [Database backup dashboard](#database-backup-dashboard)&thinsp;📊
+ * [GeoIP MMDB database dashboard](#geoip-mmdb-database-dashboard)&thinsp;📊
+ * [GeoIP dashboard](#geoip-mmdb-database-dashboard)&thinsp;📊
+ * [Fingerprint updater dashboard](#fingerprint-updater-dashboard)&thinsp;📊
+ * [ASN metadata updater dashboard](#asn-metadata-updater-dashboard)&thinsp;📊
+
+Also check <https://jupyter.ooni.org/view/notebooks/jupycron/summary.html> for glitches like notebooks not being run etc.
+
+
 ## Grafana backup runbook
 This runbook describes how to back up dashboards and alarms in Grafana.
 It does not include backing up datapoints stored in
@@ -5935,7 +6170,7 @@ sqlite3 -line /var/lib/grafana/grafana.db '.dump' > grafana_dump.sql
 ```
 
 Future implementation is tracked in:
-[Implement Grafana dashboard and alarms backup](https://github.com/ooni/backend/issues/770)
+[Implement Grafana dashboard and alarms backup](#implement-grafana-dashboard-and-alarms-backup)&thinsp;🐞
 
 
 ## Grafana editing
@@ -5977,7 +6212,7 @@ To stop notifications create a \"silence\" either:
 1.  by further expanding an alert rule (see below) and clicking the
     \"Silence\" button
 
-2.  by inputting it in inhttps://grafana.ooni.org/alerting/silences
+2.  by inputting it in <https://grafana.ooni.org/alerting/silences>
 
 Screenshot:
 
@@ -6125,6 +6360,78 @@ if __name__ == "__main__":
     main()
 ```
 
+## Recompressing postcans on S3
+The following script can be used to compress .tar.gz files in the S3 data bucket.
+It keeps a copy of the original files locally as a backup.
+It terminates once a correctly compressed file is found.
+Running the script on an AWS host close to the S3 bucket can significantly
+speed up the process.
+
+Tested with the packages:
+
+  * python3-boto3  1.28.49+dfsg-1
+  * python3-magic  2:0.4.27-2
+
+Set the ACCESS_KEY and SECRET_KEY environment variables.
+Update the PREFIX variable as needed.
+
+```python
+#!/usr/bin/env python3
+from os import getenv, rename
+from sys import exit
+import boto3
+import gzip
+import magic
+
+BUCKET_NAME = "ooni-data-eu-fra-test"
+# BUCKET_NAME = "ooni-data-eu-fra"
+PREFIX = "raw/2021"
+
+def fetch_files():
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=getenv("ACCESS_KEY"),
+        aws_secret_access_key=getenv("SECRET_KEY"),
+    )
+    cont_token = None
+    while True:
+        kw = {} if cont_token is None else dict(ContinuationToken=cont_token)
+        r = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix=PREFIX, **kw)
+        cont_token = r.get("NextContinuationToken", None)
+        for i in r.get("Contents", []):
+            k = i["Key"]
+            if k.endswith(".tar.gz"):
+                fn = k.rsplit("/", 1)[-1]
+                s3.download_file(BUCKET_NAME, k, fn)
+                yield k, fn
+        if cont_token is None:
+            return
+
+def main():
+    s3res = session = boto3.Session(
+        aws_access_key_id=getenv("ACCESS_KEY"),
+        aws_secret_access_key=getenv("SECRET_KEY"),
+    ).resource("s3")
+    for s3key, fn in fetch_files():
+        ft = magic.from_file(fn)
+        if "tar archive" not in ft:
+            print(f"found {ft} at {s3key}")
+            # continue   # simply ignore already compressed files
+            exit()      # stop when compressed files are found
+        tarfn = fn[:-3]
+        rename(fn, tarfn)  # keep the local file as a backup
+        with open(tarfn, "rb") as f:
+            inp = f.read()
+            comp = gzip.compress(inp, compresslevel=9)
+        ratio = len(inp) / len(comp)
+        del inp
+        print(f"uploading {s3key}   compression ratio {ratio}")
+        obj = s3res.Object(BUCKET_NAME, s3key)
+        obj.put(Body=comp)
+        del comp
+
+main()
+```
 
 # Github issues
 
@@ -6142,3 +6449,9 @@ See <https://github.com/ooni/backend/issues/779>
 
 ## Feed fastpath from JSONL
 See <https://github.com/ooni/backend/issues/778>
+
+
+## Implement Grafana dashboard and alarms backup
+See <https://github.com/ooni/backend/issues/770>
+
+
